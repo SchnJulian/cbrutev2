@@ -50,3 +50,15 @@ $ cbrutev2 [arguments]
 | -append <value>       | String to append to the combinations              |
 | **-h**                | **Help menu with all the arguments listed above** |
 
+### Legal
+
+Any actions and or activities related to the material contained within this program is solely your responsibility. The misuse of the information in this website can result in criminal charges brought against the persons in question. The author will not be held responsible in the event any criminal charges be brought against any individuals misusing cbrute to break the law.
+
+**Your usage of cbrute constitutes your agreement to the following terms.**
+
+1. All the information provided on this site are for **educational purposes only**. cbrute's developer is no not responsible for any misuse of the information.
+
+2. cbrute V2 is a program related to **Computer Security** and not a tool that promotes hacking / cracking.
+
+3. I reserve the right to modify the disclaimer at any time without notice.
+
