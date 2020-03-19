@@ -62,3 +62,6 @@ Any actions and or activities related to the material contained within this prog
 
 3. I reserve the right to modify the disclaimer at any time without notice.
 
+### Authors
+
+* **Julian Schnabel** - *Initial work* - [SchnJulian](https://github.com/SchnJulian)
