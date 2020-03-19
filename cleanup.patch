@@ -1,0 +1,837 @@
+Index: util.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- util.cpp	(date 1582994571794)
++++ util.cpp	(date 1582994571794)
+@@ -0,0 +1,159 @@
++//
++// Created by Julian Schnabel on 18.02.20.
++//
++#include <set>
++#include "util.h"
++
++namespace util {
++    std::size_t remove_duplicates(char *arr, std::size_t n) {
++        if (n == 0 || n == 1)
++            return n;
++
++        // To store index of next unique element
++        std::size_t j = 0;
++
++        // Doing same as done in Method 1
++        // Just maintaining another updated index i.e. j
++        for (std::size_t i = 0; i < n - 1; i++)
++            if (arr[i] != arr[i + 1])
++                arr[j++] = arr[i];
++
++        arr[j++] = arr[n - 1];
++
++        return j;
++    }
++
++    char *concat(const char *s_1, const char *s_2) {
++        const size_t len_1 = strlen(s_1);
++        const size_t len_2 = strlen(s_2);
++        char *result = (char *) malloc(len_1 + len_2 + 1); // +1 for the null-terminator
++        // in real code you would check for errors in malloc here
++        memcpy(result, s_1, len_1);
++        memcpy(result + len_1, s_2, len_2 + 1); // +1 to copy the null-terminator
++        return result;
++    }
++
++    std::pair<std::string, long double> get_unit(long double bytes) {
++        std::string unit = "B";
++        auto divisor = 1L;
++        if (bytes >= 1000 && bytes < 1000000) {
++            unit = "KB ";
++            divisor = 1000;
++        } else if (bytes >= 1000000 && bytes < 1000000000) {
++            unit = "MB";
++            divisor = 1000000;
++        } else if (bytes >= 1000000000 && bytes < 1000000000000) {
++            unit = "GB";
++            divisor = 1000000000;
++        } else if (bytes >= 1000000000000) {
++            unit = "TB";
++            divisor = 1000000000000;
++        }
++        return std::make_pair(unit, divisor);
++    }
++
++    void clear_console() {
++#if defined _WIN32
++        system("cls");
++#elif defined (__LINUX__) || defined(__gnu_linux__) || defined(__linux__)
++        system("clear");
++#elif defined (__APPLE__)
++        system("clear");
++#endif
++    }
++
++    void logo() {
++        std::string logo =
++                R"(
++          $$\                             $$\
++          $$ |                            $$ |
++ $$$$$$$\ $$$$$$$\   $$$$$$\  $$\   $$\ $$$$$$\    $$$$$$\
++$$  _____|$$  __$$\ $$  __$$\ $$ |  $$ |\_$$  _|  $$  __$$\
++$$ /      $$ |  $$ |$$ |  \__|$$ |  $$ |  $$ |    $$$$$$$$ |
++$$ |      $$ |  $$ |$$ |      $$ |  $$ |  $$ |$$\ $$   ____|
++\$$$$$$$\ $$$$$$$  |$$ |      \$$$$$$  |  \$$$$  |\$$$$$$$\
++ \_______|\_______/ \__|       \______/    \____/  \_______|
++)";
++        std::cout << "\n\n\n" << logo << "\n\n\n";
++    }
++
++    bool disclaimer() {
++        std::string disclaimer =
++                R"(
++Any actions and or activities related to the material contained within this program is solely your responsibility.
++The misuse of the information in this website can result in criminal charges brought against the persons in question.
++The author will not be held responsible in the event any criminal charges be brought against any individuals misusing cbrute to break the law.
++
++**Your usage of cbrute constitutes your agreement to the following terms.**
++
++1. All the information provided on this site are for **educational purposes only**. cbrute's developer is no not responsible for any misuse of the information.
++2. cbrute is a program related to **Computer Security** and not a tool that promotes hacking / cracking.
++3. I reserve the right to modify the disclaimer at any time without notice.
++
++)";
++        std::cout << "\n\n\n"
++                  << disclaimer
++                  << "I have read and agree to the terms and conditions: [y/n]: ";
++        char input;
++        std::cin >> input;
++        return (tolower(input) == 'y');
++    }
++
++    bool memory_warning(long double bytes) {
++        auto ud = get_unit(bytes);
++        std::cout << "cbrute will generate a " << bytes / ud.second << " " << ud.first << " text file." << std::endl <<
++                  "Start process? [y/n] ";
++        char input;
++        std::cin >> input;
++        return (tolower(input) == 'y');
++    }
++
++    void help_menu() {
++        std::string help =
++                R"(
++
++### CBRUTE 0.1 ###
++
++    Generate combinations/permutations with cbrute!
++
++USAGE:
++    cbrute [arguments]
++
++OPTIONS:
++    -h                      This help menu
++    -log                    Print results to the console [deprecated]
++
++ARGUMENTS:
++    -lmin <value>           Minimum length of the combination
++    -lmax <value
++    -c <values>             Character-set
++    -f <path>               Path for output file with the combinations
++    -perm                   No repetitions [deprecated]
++                            cbrute will generate every possible permutation of the given characters
++                            A custom -l argument will be ignored
++    -ascii                  Full (printable) ASCII character-set
++    -alphabetic <value>     Add full latin alphabet to character-set
++                            l: lowercase letters
++                            u: uppercase letters
++    -alphabetic             Add full latin alphabet to character-set with both uppercase and lowercase
++                            characters
++    -digit                  Add digits from 0-9 to the character-set
++    -special                Add special characters to the character-set
++    -x <values>             Excluded characters
++    -prepend <value>        Prepend <string>
++    -append <value>         Append <string>
++    -threads <value>        Manual thread override: Calculate combinations with the amount of threads specified by
++                            the user. (Not recommended by default!) [deprecated]
++    )";
++        std::cout << help << std::endl;
++    }
++
++    unsigned long factorial(unsigned long n) {
++        auto n_res = 1UL;
++        for (int i = 2; i <= n; ++i) {
++            n_res *= i;
++        }
++        return n_res;
++    }
++
++}
+Index: Generator.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Generator.cpp	(date 1584651457083)
++++ Generator.cpp	(date 1584651457083)
+@@ -0,0 +1,503 @@
++//
++// Created by Julian Schnabel on 18.02.20.
++//
++
++#include <set>
++#include "Generator.h"
++
++
++Generator::Generator(int argc, char **argv) { parse_arguments(argc, argv); }
++
++Generator::~Generator() {
++    free(char_pool);
++    fclose(output_file);
++    if (append)
++        free(append_str);
++    if (prepend)
++        free(prepend_str);
++}
++
++void Generator::get_comb_k(const std::string &prefix, std::size_t k) {
++
++    // Base case: k is 0,
++    // print prefix
++    if (k == 0) {
++        {
++            std::lock_guard<std::mutex> lock(m);
++            combinations.emplace(prefix.c_str());
++        }
++        return;
++    }
++
++    // One by one add all characters
++    // from set and recursively
++    // call for k equals to k-1
++    for (int i = 0; i < element_count; i++) {
++        std::string new_prefix;
++
++        // Next character of input added
++        new_prefix = prefix + char_pool[i];
++
++        // k is decreased, because
++        // we have added a new character
++        get_comb_k(new_prefix, k - 1);
++    }
++}
++
++void Generator::get_comb() {
++    for (auto i = length_min; i <= length_max; i++) {
++        get_comb_k("", i);
++    }
++}
++
++bool Generator::parse_arguments(int argc, char **args) {
++
++    std::map<std::string, std::string> argument_map;
++    auto length_min_in = std::make_pair("-lmin", "");
++    auto length_max_in = std::make_pair("-lmax", "");
++    auto characters = std::make_pair("-c", "");
++    auto file_path = std::make_pair("-f", "");
++    auto perm = std::make_pair("-perm", "");
++    auto log = std::make_pair("-log", "");
++    auto alphabetic = std::make_pair("-alphabetic", "");
++    auto digit = std::make_pair("-digit", "");
++    auto special = std::make_pair("-special", "");
++    auto ascii = std::make_pair("-ascii", "");
++    auto exclude = std::make_pair("-x", "");
++    auto prepend = std::make_pair("-prepend", "");
++    auto append = std::make_pair("-append", "");
++    auto threads = std::make_pair("-threads", "");
++
++    argument_map.insert(length_min_in);
++    argument_map.insert(length_max_in);
++    argument_map.insert(characters);
++    argument_map.insert(file_path);
++    argument_map.insert(perm);
++    argument_map.insert(log);
++    argument_map.insert(alphabetic);
++    argument_map.insert(digit);
++    argument_map.insert(special);
++    argument_map.insert(ascii);
++    argument_map.insert(exclude);
++    argument_map.insert(prepend);
++    argument_map.insert(append);
++    argument_map.insert(threads);
++
++    // Iterate through arg string
++    for (int i = 1; i < argc - 1; ++i) {
++        if (argument_map.find(args[i]) != std::end(argument_map)) {
++            argument_map.find(args[i])->second = args[i + 1];
++        }
++    }
++    // Check last argument
++    if (argument_map.find(args[argc - 1]) != std::end(argument_map))
++        argument_map.find(args[argc - 1])->second = "1";
++
++    try {
++        // Check if user wants to permute a string
++        this->permute = !(argument_map.at(perm.first).empty());
++
++        if (this->permute) {
++            this->permute_str = argument_map.at(perm.first);
++        } else {
++            this->length_min = std::stoul(argument_map.at(length_min_in.first));
++            this->length_max = std::stoul(argument_map.at(length_max_in.first));
++        }
++
++        // Check if user wants to print the combinations/permutations to a file
++        this->path = argument_map.at(file_path.first);
++        if (!path.empty()) {
++            file_mode = true;
++            if (path.find(DEFAULT_FILE_EXTENSION) == std::string::npos) {
++                // Add missing file extension
++                path.append(DEFAULT_FILE_EXTENSION);
++            }
++        }
++
++        this->console_log = !(argument_map.at(log.first).empty());
++
++        // String to prepend before
++        if (!(argument_map.at(prepend.first).empty())) {
++            prepend_str = static_cast<char *>(
++                    malloc(argument_map.at(append.first).size() * sizeof(char)));
++            strcpy(prepend_str, argument_map.at(prepend.first).c_str());
++            this->prepend = true;
++        }
++
++        // String to append to
++        if (!(argument_map.at(append.first).empty())) {
++            append_str = static_cast<char *>(
++                    malloc(argument_map.at(append.first).size() * sizeof(char)));
++            strcpy(append_str, argument_map.at(append.first).c_str());
++            this->append = true;
++        }
++
++        // Check if full ascii set was activated
++        if (!(argument_map.at(ascii.first).empty())) {
++            char_pool = (char *) malloc(sizeof(Generator::ASCII));
++            strcpy(char_pool, Generator::ASCII);
++        } else {
++            // Initialize alphabetic character set
++            if (argument_map.at(alphabetic.first) == "u") {
++
++                if (char_pool != nullptr) {
++                    char *buf = (char *) malloc(strlen(char_pool) * sizeof(char));
++                    memcpy(buf, char_pool, strlen(char_pool) + 1);
++                    char_pool = util::concat(buf, Generator::ALPHABETIC_U);
++                    // free buffer
++                    free(buf);
++                } else {
++                    char_pool = (char *) malloc(sizeof(Generator::ALPHABETIC_U));
++                    memcpy(char_pool, Generator::ALPHABETIC_U,
++                           strlen(Generator::ALPHABETIC_U) + 1);
++                }
++
++            } else if (argument_map.at(alphabetic.first) == "l") {
++
++                if (char_pool != nullptr) {
++                    char *buf = (char *) malloc(strlen(char_pool) * sizeof(char));
++                    memcpy(buf, char_pool, strlen(char_pool) + 1);
++                    char_pool = util::concat(buf, Generator::ALPHABETIC_L);
++                    // free buffer
++                    free(buf);
++                } else {
++                    char_pool = (char *) malloc(sizeof(Generator::ALPHABETIC_L));
++                    memcpy(char_pool, Generator::ALPHABETIC_L,
++                           strlen(Generator::ALPHABETIC_L) + 1);
++                }
++
++            } else if (!(argument_map.at(alphabetic.first).empty())) {
++                if (char_pool != nullptr) {
++                    char *buf = (char *) malloc(strlen(char_pool) * sizeof(char));
++                    memcpy(buf, char_pool, strlen(char_pool) + 1);
++                    char_pool = util::concat(buf, Generator::ALPHABETIC);
++                    // free buffer
++                    free(buf);
++                } else {
++                    char_pool = (char *) malloc(sizeof(Generator::ALPHABETIC));
++                    memcpy(char_pool, Generator::ALPHABETIC,
++                           strlen(Generator::ALPHABETIC) + 1);
++                }
++            }
++
++            // Initialize numeric character set
++            if (!(argument_map.at(digit.first).empty())) {
++                if (char_pool != nullptr) {
++                    char *buf = (char *) malloc(strlen(char_pool) * sizeof(char));
++                    memcpy(buf, char_pool, strlen(char_pool) + 1);
++                    char_pool = util::concat(buf, Generator::NUMERIC);
++                    // free buffer
++                    free(buf);
++                } else {
++                    char_pool = (char *) malloc(sizeof(Generator::NUMERIC));
++                    memcpy(char_pool, Generator::NUMERIC, strlen(Generator::NUMERIC) + 1);
++                }
++            }
++
++            // Initialize special character set
++            if (!(argument_map.at(special.first).empty())) {
++                if (char_pool != nullptr) {
++                    char *buf = (char *) malloc(strlen(char_pool) * sizeof(char));
++                    memcpy(buf, char_pool, strlen(char_pool) + 1);
++                    char_pool = util::concat(buf, Generator::SPECIAL);
++                    // free buffer
++                    free(buf);
++                } else {
++                    char_pool = (char *) malloc(sizeof(Generator::SPECIAL));
++                    memcpy(char_pool, Generator::SPECIAL, strlen(Generator::SPECIAL) + 1);
++                }
++            }
++
++            if (!(argument_map.at(characters.first).empty())) {
++                // Initialize character set
++                auto temp = argument_map.at(characters.first);
++
++                if (char_pool != nullptr) {
++                    char *buf = (char *) malloc(strlen(char_pool) * sizeof(char));
++                    memcpy(buf, char_pool, strlen(char_pool) + 1);
++                    char_pool = util::concat(buf, temp.c_str());
++                    // free buffer
++                    free(buf);
++                } else {
++                    char_pool = (char *) malloc(temp.size());
++                    memcpy(char_pool, temp.c_str(), strlen(temp.c_str()) + 1);
++                }
++            }
++            if (!permute) {
++                std::sort(char_pool, char_pool + strlen(char_pool));
++                util::remove_duplicates(char_pool, strlen(char_pool));
++                element_count = strlen(char_pool);
++            } else {
++                std::sort(std::begin(permute_str), std::end(permute_str));
++            }
++
++            if (!argument_map.at(exclude.first).empty()) {
++                auto tmp = std::string(this->char_pool);
++                auto rmv = std::string(argument_map.at(exclude.first));
++                std::sort(std::begin(rmv), std::end(rmv));
++
++                tmp.erase(std::remove_if(std::begin(tmp), std::end(tmp), [rmv](auto x) {
++                    return std::binary_search(std::begin(rmv), std::end(rmv), x);
++                }));
++
++                free(char_pool);
++                char_pool = (char *) malloc(tmp.size());
++                memcpy(char_pool, tmp.c_str(), strlen(tmp.c_str()) + 1);
++            }
++        }
++
++    } catch (std::invalid_argument &e) {
++        return false;
++    }
++    return true;
++}
++
++bool Generator::init_file() {
++    output_file = fopen(this->path.c_str(), "w");
++    return (output_file != nullptr);
++}
++
++bool Generator::start() {
++    begin = std::chrono::high_resolution_clock::now();
++    get_total_n();
++    get_approximate_memory();
++
++    if (file_mode) {
++        if (permute) {
++            if (init_file()) {
++                std::thread generate_t(&Generator::get_permutations, this);
++                std::thread tptr;
++                running = true;
++
++                if (append && prepend) {
++                    std::thread print_t(&Generator::print_append_prepend, this);
++                    tptr = std::move(print_t);
++                } else if (prepend) {
++                    std::thread print_t(&Generator::print_prepend, this);
++                    tptr = std::move(print_t);
++                } else if (append) {
++                    std::thread print_t(&Generator::print_append, this);
++                    tptr = std::move(print_t);
++                } else {
++                    std::thread print_t(&Generator::print_comb, this);
++                    tptr = std::move(print_t);
++                }
++
++                if (generate_t.joinable()) {
++                    generate_t.join();
++                    running = false;
++                }
++                if (tptr.joinable()) {
++                    tptr.join();
++                }
++            }
++        } else {
++            if (init_file()) {
++                std::thread generate_t(&Generator::get_comb, this);
++                running = true;
++                std::thread tptr;
++                if (append && prepend) {
++                    std::thread print_t(&Generator::print_append_prepend, this);
++                    tptr = std::move(print_t);
++                } else if (prepend) {
++                    std::thread print_t(&Generator::print_prepend, this);
++                    tptr = std::move(print_t);
++                } else if (append) {
++                    std::thread print_t(&Generator::print_append, this);
++                    tptr = std::move(print_t);
++                } else {
++                    std::thread print_t(&Generator::print_comb, this);
++                    tptr = std::move(print_t);
++                }
++
++                if (generate_t.joinable()) {
++                    generate_t.join();
++                    running = false;
++                }
++
++                if (tptr.joinable()) {
++                    tptr.join();
++                }
++            }
++        }
++    }
++
++    end = std::chrono::high_resolution_clock::now();
++    duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
++
++    print_report(std::cout);
++    return true;
++}
++
++void Generator::print_comb() {
++    todo_print = total_N;
++    while (todo_print > 0) {
++        if (running) {
++            std::this_thread::sleep_for(std::chrono::milliseconds(500));
++            std::queue<std::string> temp;
++            { // Lock only taken for this section
++                // Lock this area to avoid adding and printing to/from the vector
++                // simultaneously
++                std::lock_guard<std::mutex> lock(m);
++                temp = std::move(combinations);
++                combinations = std::queue<std::string>();
++            }
++            while (!temp.empty()) {
++                fprintf(output_file, "%s\n", temp.front().c_str());
++                temp.pop();
++                todo_print--;
++            }
++        } else {
++            while (!combinations.empty()) {
++                fprintf(output_file, "%s\n", combinations.front().c_str());
++                combinations.pop();
++                todo_print--;
++            }
++        }
++    }
++}
++
++void Generator::print_append() {
++    todo_print = total_N;
++    while (todo_print > 0) {
++        if (running) {
++            std::this_thread::sleep_for(std::chrono::milliseconds(500));
++            std::queue<std::string> temp;
++            {   // Lock only taken for this section
++                // Lock this area to avoid adding and printing to/from the vector
++                // simultaneously
++                std::lock_guard<std::mutex> lock(m);
++                temp = std::move(combinations);
++            }
++            while (!temp.empty()) {
++                fprintf(output_file, "%s%s\n", temp.front().c_str(), append_str);
++                temp.pop();
++                todo_print--;
++            }
++        } else {
++            while (!combinations.empty()) {
++                fprintf(output_file, "%s%s\n", combinations.front().c_str(), append_str);
++                combinations.pop();
++                todo_print--;
++            }
++        }
++    }
++}
++
++void Generator::print_prepend() {
++    todo_print = total_N;
++    while (todo_print > 0) {
++        if (running) {
++            std::this_thread::sleep_for(std::chrono::milliseconds(500));
++            std::queue<std::string> temp;
++            { // Lock only taken for this section
++                // Lock this area to avoid adding and printing to/from the vector
++                // simultaneously
++                std::lock_guard<std::mutex> lock(m);
++                temp = std::move(combinations);
++            }
++            while (!temp.empty()) {
++                fprintf(output_file, "%s%s\n", prepend_str, temp.front().c_str());
++                temp.pop();
++                todo_print--;
++            }
++        } else {
++            while (!combinations.empty()) {
++                fprintf(output_file, "%s%s\n", prepend_str, combinations.front().c_str());
++                combinations.pop();
++                todo_print--;
++            }
++        }
++    }
++}
++
++void Generator::print_append_prepend() {
++    todo_print = total_N;
++    while (todo_print > 0) {
++        if (running) {
++            std::this_thread::sleep_for(std::chrono::milliseconds(500));
++            std::queue<std::string> temp;
++            { // Lock only taken for this section
++                // Lock this area to avoid adding and printing to/from the vector
++                // simultaneously
++                std::lock_guard<std::mutex> lock(m);
++                temp = std::move(combinations);
++            }
++            while (!temp.empty()) {
++                fprintf(output_file, "%s%s%s\n", prepend_str, temp.front().c_str(), append_str);
++                temp.pop();
++                todo_print--;
++            }
++        } else {
++            while (!combinations.empty()) {
++                fprintf(output_file, "%s%s%s\n", prepend_str, combinations.front().c_str(), append_str);
++                combinations.pop();
++                todo_print--;
++            }
++        }
++    }
++}
++
++std::size_t Generator::get_approximate_memory() {
++    // Reset memory
++    approximate_memory = 0;
++    if (permute) {
++        approximate_memory = get_total_n() * permute_str.size();
++    } else {
++        // Memory for combinations
++        for (auto i = length_min; i <= length_max; i++) {
++            approximate_memory += sizeof(char) * (i + 1) * get_single_n(i);
++        }
++    }
++
++    if (append) {
++        approximate_memory += total_N * strlen(append_str) * sizeof(char);
++    }
++    if (prepend) {
++        approximate_memory += total_N * strlen(prepend_str) * sizeof(char);
++    }
++    return approximate_memory;
++}
++
++std::size_t Generator::get_single_n(std::size_t length) {
++    return std::pow(element_count, length);
++}
++
++std::size_t Generator::get_total_n() {
++    if (permute) {
++
++        auto N = util::factorial(permute_str.length());
++        auto d = 1UL;
++        auto permute_set = std::set<char>(std::begin(permute_str), std::end(permute_str));
++        for (auto x : permute_set) {
++            d *= util::factorial(std::count(std::begin(permute_str), std::end(permute_str), x));
++        }
++
++        total_N = N / d;
++    } else {
++        for (auto l = length_min; l <= length_max; ++l) {
++            total_N += std::pow(element_count, l);
++        }
++    }
++
++    return total_N;
++}
++
++void Generator::print_report(std::ostream &os) {
++    const auto ud = util::get_unit(approximate_memory);
++    os << "\n---\n"
++       << total_N << " "
++       << "Combinations generated in " << duration.count() << " milliseconds."
++       << std::endl
++       << "Total disk usage: " << approximate_memory / ud.second << " "
++       << ud.first << std::endl;
++}
++
++void Generator::get_permutations() {
++    do {
++        {
++            std::lock_guard<std::mutex> lock(m);
++            combinations.emplace(permute_str.c_str());
++        }
++    } while (std::next_permutation(std::begin(permute_str), std::end(permute_str)));
++}
+Index: Generator.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- Generator.h	(date 1582996029019)
++++ Generator.h	(date 1582996029019)
+@@ -0,0 +1,102 @@
++//
++// Created by Julian Schnabel on 18.02.20.
++//
++
++#ifndef CBRUTEV2_GENERATOR_H
++#define CBRUTEV2_GENERATOR_H
++
++#include "util.h"
++
++
++class Generator {
++public:
++  Generator(int argc, char **argv);
++
++  virtual ~Generator();
++
++  bool start();
++
++  std::size_t get_approximate_memory();
++
++private:
++  // Parse arguments
++  bool parse_arguments(int argc, char **args);
++
++  // Constant pools
++  static constexpr char ALPHABETIC_L[] = "abcdefghijklmnopqrstuvwxyz";
++  static constexpr char ALPHABETIC_U[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
++  static constexpr char ALPHABETIC[] =
++          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
++  static constexpr char NUMERIC[] = "0123456789";
++  static constexpr char SPECIAL[] = "!\"$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
++  static constexpr char ASCII[] =
++          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"$%&'()*"
++          "+,-./:;<=>?@[\\]^_`{|}~";
++  static constexpr char DEFAULT_FILE_EXTENSION[] = ".txt";
++
++  std::size_t element_count = 0; // Number of possible characters
++
++  // File assets
++  FILE *output_file{};
++  bool file_mode{};
++
++  bool init_file();
++
++  std::string path;
++
++  void print_comb();
++
++  void print_append();
++
++  void print_prepend();
++
++  void print_append_prepend();
++
++  std::mutex m;
++  bool permute = false; // Generate permutations
++  std::string permute_str;
++
++  void get_permutations();
++
++  bool running{}; // Indicates whether cbrute is still generating combinations
++
++
++  // Lengths
++  std::size_t length_min = 0;
++  std::size_t length_max = 0;
++
++  // Total combination/permutation count
++  std::size_t total_N = 0;
++  std::size_t todo_print = 0;
++
++  std::size_t get_total_n();
++
++  std::size_t get_single_n(std::size_t length);
++
++  long double approximate_memory = 0;
++
++  // Prints combinations/permutations to console
++  bool console_log{};
++
++  // Strings to append to / prepend before
++  char *append_str = nullptr;
++  bool append = false;
++  char *prepend_str = nullptr;
++  bool prepend = false;
++  // CHARPOOL
++  char *char_pool = nullptr;
++
++  std::queue<std::string> combinations;
++
++  void get_comb(); // Wrapper method for get_comb_k
++  void get_comb_k(const std::string &prefix, std::size_t k);
++
++  // Benchmark variables
++  std::__1::chrono::steady_clock::time_point begin;
++  std::__1::chrono::steady_clock::time_point end;
++  std::__1::chrono::milliseconds duration{};
++
++  void print_report(std::ostream &os);
++};
++
++#endif // CBRUTEV2_GENERATOR_H
+Index: util.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- util.h	(date 1582996023740)
++++ util.h	(date 1582996023740)
+@@ -0,0 +1,41 @@
++//
++// Created by Julian Schnabel on 18.02.20.
++//
++
++#ifndef CBRUTEV2_UTIL_H
++#define CBRUTEV2_UTIL_H
++
++#include <algorithm>
++#include <cmath>
++#include <cstdio>
++#include <fstream>
++#include <map>
++#include <queue>
++#include <thread>
++#include <vector>
++#include <cstdlib>
++#include <cstring>
++#include <string>
++#include <utility>
++#include <iostream>
++
++namespace util {
++    std::size_t remove_duplicates(char *arr, std::size_t n);
++
++    char *concat(const char *s_1, const char *s_2);
++
++    std::pair<std::string, long double> get_unit(long double bytes);
++
++    void clear_console();
++
++    void logo();
++
++    bool disclaimer();
++
++    bool memory_warning(long double bytes);
++
++    void help_menu();
++
++    unsigned long factorial(unsigned long n);
++}
++#endif //CBRUTEV2_UTIL_H
